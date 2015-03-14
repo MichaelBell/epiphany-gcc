@@ -2618,7 +2618,7 @@ emit_set_fp_mode (int entity, int mode, HARD_REG_SET regs_live ATTRIBUTE_UNUSED)
     {
       gcc_assert (mode >= 0 && mode <= 2);
       if (mode == 1)
-	emit_move_insn (MACHINE_FUNCTION (cfun)->or_mask, GEN_INT(0x00080000));
+	emit_move_insn (MACHINE_FUNCTION (cfun)->or_mask, GEN_INT(0x00080001));
       return;
     }
   else if (entity == EPIPHANY_MSW_ENTITY_CONFIG)
