@@ -69,9 +69,11 @@
   Targets can parameterize the pass by specifying a preferred class for the
   renaming register for a given (super)class of registers to be renamed.  */
 
-#if HOST_BITS_PER_WIDE_INT <= MAX_RECOG_OPERANDS
+#if 64 <= MAX_RECOG_OPERANDS
 #error "Use a different bitmap implementation for untracked_operands."
 #endif
+
+typedef unsigned long long untracked_bitmap_t;
 
 enum scan_actions
 {
@@ -1424,7 +1426,7 @@ scan_rtx (rtx insn, rtx *loc, enum reg_class cl, enum scan_actions action,
 
 static void
 hide_operands (int n_ops, rtx *old_operands, rtx *old_dups,
-	       unsigned HOST_WIDE_INT do_not_hide, bool inout_and_ec_only)
+	       untracked_bitmap_t do_not_hide, bool inout_and_ec_only)
 {
   int i;
   int alt = which_alternative;
@@ -1436,7 +1438,7 @@ hide_operands (int n_ops, rtx *old_operands, rtx *old_dups,
 	 reachable by proper operands.  */
       if (recog_data.constraints[i][0] == '\0')
 	continue;
-      if (do_not_hide & (1 << i))
+      if (do_not_hide & (((untracked_bitmap_t)1) << i))
 	continue;
       if (!inout_and_ec_only || recog_data.operand_type[i] == OP_INOUT
 	  || recog_op_alt[i][alt].earlyclobber)
@@ -1446,7 +1448,7 @@ hide_operands (int n_ops, rtx *old_operands, rtx *old_dups,
     {
       int opn = recog_data.dup_num[i];
       old_dups[i] = *recog_data.dup_loc[i];
-      if (do_not_hide & (1 << opn))
+      if (do_not_hide & (((untracked_bitmap_t)1) << opn))
 	continue;
       if (!inout_and_ec_only || recog_data.operand_type[opn] == OP_INOUT
 	  || recog_op_alt[opn][alt].earlyclobber)
@@ -1526,7 +1528,7 @@ static bool
 build_def_use (basic_block bb)
 {
   rtx insn;
-  unsigned HOST_WIDE_INT untracked_operands;
+  untracked_bitmap_t untracked_operands;
 
   fail_current_block = false;
 
@@ -1612,14 +1614,14 @@ build_def_use (basic_block bb)
 			  != GET_MODE_SIZE (recog_data.operand_mode[matches]))
 		      && !verify_reg_in_set (op, &live_in_chains))
 		    {
-		      untracked_operands |= 1 << i;
-		      untracked_operands |= 1 << matches;
+		      untracked_operands |= ((untracked_bitmap_t)1) << i;
+		      untracked_operands |= ((untracked_bitmap_t)1) << matches;
 		    }
 		}
 	      /* If there's an in-out operand with a register that is not
 		 being tracked at all yet, open a chain.  */
 	      if (recog_data.operand_type[i] == OP_INOUT
-		  && !(untracked_operands & (1 << i))
+		  && !(untracked_operands & (((untracked_bitmap_t)1) << i))
 		  && REG_P (op)
 		  && !verify_reg_tracked (op))
 		{
@@ -1689,7 +1691,7 @@ build_def_use (basic_block bb)
 		 information to pass down.  Any operands that we could
 		 substitute in will be represented elsewhere.  */
 	      if (recog_data.constraints[opn][0] == '\0'
-		  || untracked_operands & (1 << opn))
+		  || untracked_operands & (((untracked_bitmap_t)1) << opn))
 		continue;
 
 	      if (insn_info)
